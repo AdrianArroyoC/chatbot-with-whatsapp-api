@@ -1,0 +1,14 @@
+{
+  "name": "chatbot-con-whatsapp-api",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot --inspect index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
