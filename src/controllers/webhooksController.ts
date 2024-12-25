@@ -1,5 +1,5 @@
 import config from '../config/env';
-import messageHandler from '../services/messageHandler';
+import messageHandler, { type Message, type SenderInfo } from '../services/messageHandler';
 
 class WebhookController {
   async handleIncoming(req: Request): Promise<Response> {
@@ -7,9 +7,12 @@ class WebhookController {
 
     // check if the webhook request contains a message
     // details on WhatsApp text message payload: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#text-messages
-    const message = body!.entry?.[0]?.changes[0]?.value?.messages?.[0];
+    const { messages, contacts } = body.entry?.[0]?.changes[0]?.value;
+    const message = messages?.[0] as Message;
+    const senderInfo = contacts?.[0] as SenderInfo;
+
     if (message) {
-      await messageHandler.handleIncomingMessage(message);
+      await messageHandler.handleIncomingMessage(message, senderInfo);
     }
 
     return new Response('OK', { status: 200 });
