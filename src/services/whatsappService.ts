@@ -2,7 +2,7 @@ import config from '../config/env';
 const { API_VERSION, BUSINESS_PHONE, GRAPH_API_TOKEN } = config;
 
 class WhatsappService {
-  async sendMessage(from: string, body: string, messageId: string) {
+  async sendMessage(from: string, body: string, messageId: string): Promise<void> {
     const to = from.startsWith("521") ? from.replace("521", "52") : from;
 
     try {
@@ -30,7 +30,7 @@ class WhatsappService {
     }
   }
 
-  async makAsRead(messageId: string) {
+  async makAsRead(messageId: string): Promise<void> {
     try {
       await fetch(
         `https://graph.facebook.com/${API_VERSION}/${BUSINESS_PHONE}/messages`,
