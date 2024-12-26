@@ -3,25 +3,31 @@ const { API_VERSION, BUSINESS_PHONE, GRAPH_API_TOKEN } = config;
 import { type Button } from './messageHandler';
 
 class WhatsappService {
-  async sendMessage(to: string, body: string, messageId: string): Promise<void> {
+  baseUrl = `https://graph.facebook.com/${API_VERSION}/${BUSINESS_PHONE}`;
+  headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${GRAPH_API_TOKEN}`,
+  };
+
+  async sendMessage(to: string, body: string, messageId?: string | null): Promise<void> {
+    const bodyObj: any = {
+      messaging_product: "whatsapp",
+      to,
+      text: { body }
+    };
+    if (messageId) {
+      bodyObj.context = {
+        message_id: messageId // shows the message as a reply to the original user message
+      }
+    }
     try {
       // send a reply message as per the docs here https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages
       await fetch(
-        `https://graph.facebook.com/${API_VERSION}/${BUSINESS_PHONE}/messages`,
+        `${this.baseUrl}/messages`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${GRAPH_API_TOKEN}`,
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to,
-            text: { body },
-            context: {
-              message_id: messageId // shows the message as a reply to the original user message
-            },
-          }),
+          headers: this.headers,
+          body: JSON.stringify(bodyObj),
         }
       );
     } catch (error) {
@@ -32,13 +38,10 @@ class WhatsappService {
   async makAsRead(messageId: string): Promise<void> {
     try {
       await fetch(
-        `https://graph.facebook.com/${API_VERSION}/${BUSINESS_PHONE}/messages`,
+        `${this.baseUrl}/messages`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${GRAPH_API_TOKEN}`,
-          },
+          headers: this.headers,
           body: JSON.stringify({
             messaging_product: "whatsapp",
             status: "read",
@@ -54,13 +57,10 @@ class WhatsappService {
   async sendInteractiveButtons(to: string, text: string, buttons: Button[]): Promise<void> {
     try {
       await fetch(
-        `https://graph.facebook.com/${API_VERSION}/${BUSINESS_PHONE}/messages`,
+        `${this.baseUrl}/messages`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${GRAPH_API_TOKEN}`,
-          },
+          headers: this.headers,
           body: JSON.stringify({
             messaging_product: "whatsapp",
             to,
