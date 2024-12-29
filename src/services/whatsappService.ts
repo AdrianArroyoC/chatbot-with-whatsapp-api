@@ -1,6 +1,6 @@
 import config from '../config/env';
 const { API_VERSION, BUSINESS_PHONE, GRAPH_API_TOKEN } = config;
-import { type Button } from './messageHandler';
+import { type Button, type MediaMessageType } from './messageHandler';
 
 class WhatsappService {
   baseUrl = `https://graph.facebook.com/${API_VERSION}/${BUSINESS_PHONE}`;
@@ -10,7 +10,12 @@ class WhatsappService {
   };
 
   async sendMessage(to: string, body: string, messageId?: string | null): Promise<void> {
-    const bodyObj: any = {
+    const bodyObj: {
+      messaging_product: string;
+      to: string;
+      text: { body: string };
+      context?: { message_id: string };
+    } = {
       messaging_product: "whatsapp",
       to,
       text: { body }
@@ -76,6 +81,46 @@ class WhatsappService {
     } catch (error) {
       console.error("Error sending interactive buttons:", error);
 
+    }
+  }
+
+  async sendMediaMessage(to: string, type: MediaMessageType, link: string, caption?: string, filename?: string): Promise<void> {
+    try {
+      const bodyObj: {
+        messaging_product: string;
+        to: string;
+        type: MediaMessageType;
+        image?: { link: string, caption?: string };
+        audio?: { link: string };
+        video?: { link: string, caption?: string };
+        document?: { link: string, caption?: string, filename?: string };
+      } = {
+        messaging_product: "whatsapp",
+        to,
+        type,
+      };
+      if (type === 'image') {
+        bodyObj.image = { link, caption };
+      } else if (type === 'audio') {
+        bodyObj.audio = { link };
+      } else if (type === 'video') {
+        bodyObj.video = { link, caption };
+      } else if (type === 'document') {
+        bodyObj.document = { link, caption, filename };
+      }
+      else {
+        throw new Error("Media type not supported");
+      }
+      await fetch(
+        `${this.baseUrl}/messages`,
+        {
+          method: "POST",
+          headers: this.headers,
+          body: JSON.stringify(bodyObj),
+        }
+      );
+    } catch (error) {
+      console.error("Error sending media message:", error);
     }
   }
 }
