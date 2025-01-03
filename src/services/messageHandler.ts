@@ -1,4 +1,5 @@
 import WhatsappService from './whatsappService';
+import appendToSheet from './googleSheetsService';
 
 const MEDIA_TYPES = ['image', 'audio', 'document', 'sticker', 'video'] as const;
 export type MediaMessageType = typeof MEDIA_TYPES[number];
@@ -199,9 +200,12 @@ class MessageHandler {
       appointment!.name,
       appointment!.petName,
       appointment!.petType,
+      appointment!.reason,
+      appointment!.date,
+      appointment!.time,
     ];
 
-    console.log(userData);
+    appendToSheet(userData);
 
     return `Cita agendar, resumen de tu cita:
 
