@@ -4,4 +4,6 @@ export default {
   PORT: process.env.PORT || 3000,
   BUSINESS_PHONE: process.env.BUSINESS_PHONE,
   API_VERSION: process.env.API_VERSION || 'v21.0',
+  SPREADSHEET_ID: process.env.SPREADSHEET_ID,
+  CHATGPT_API_KEY: process.env.CHATGPT_API_KEY,
 }

@@ -1,6 +1,7 @@
 import config from '../config/env';
-const { API_VERSION, BUSINESS_PHONE, GRAPH_API_TOKEN } = config;
 import { type Button, type MediaMessageType } from './messageHandler';
+
+const { API_VERSION, BUSINESS_PHONE, GRAPH_API_TOKEN } = config;
 
 class WhatsappService {
   baseUrl = `https://graph.facebook.com/${API_VERSION}/${BUSINESS_PHONE}`;
