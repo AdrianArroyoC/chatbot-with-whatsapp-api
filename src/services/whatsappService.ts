@@ -124,6 +124,26 @@ class WhatsappService {
       console.error("Error sending media message:", error);
     }
   }
+
+  async sendContactMessage(to: string, contact: any): Promise<void> {
+    try {
+      await fetch(
+        `${this.baseUrl}/messages`,
+        {
+          method: "POST",
+          headers: this.headers,
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to,
+            type: "contacts",
+            contacts: [contact],
+          }),
+        }
+      );
+    } catch (error) {
+      console.error("Error sending contact message:", error);
+    }
+  }
 }
 
 export default new WhatsappService();

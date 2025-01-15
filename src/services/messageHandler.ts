@@ -1,5 +1,6 @@
 import WhatsappService from './whatsappService';
 import appendToSheet from './googleSheetsService';
+import openAiService from './openAiService';
 
 const MEDIA_TYPES = ['image', 'audio', 'document', 'sticker', 'video'] as const;
 export type MediaMessageType = typeof MEDIA_TYPES[number];
@@ -59,8 +60,15 @@ class MessageHandler {
     } | null;
   };
 
+  assistantState: {
+    [to: string]: {
+      step: 'question';
+    } | null;
+  };
+
   constructor() {
     this.appointmentState = {};
+    this.assistantState = {};
   }
 
   async handleIncomingMessage(incomingMessage: IncomingMessage, senderInfo: SenderInfo): Promise<void> {
@@ -69,7 +77,9 @@ class MessageHandler {
     if (incomingMessage?.type === 'text') {
       const messageText = incomingMessage.text!.body.toLowerCase().trim();
 
-      if (this.appointmentState[to]) {
+      if (this.assistantState[to]) {
+        await this.handleAssistantFlow(to, messageText);
+      } else if (this.appointmentState[to]) {
         await this.handleAppointmentFlow(to, messageText);
       } else if (this.isGreeting(messageText)) {
         await this.sendWelcomeMessage(to, incomingMessage.id, senderInfo);
@@ -150,15 +160,20 @@ class MessageHandler {
 
   async handleMenuOption(to: string, option: string, optionType: 'title' | 'id'): Promise<void> {
     let response = 'Opción no válida';
-    if (option === (optionType === 'title' ? 'agendar' : 'option1')) {
+    if (option === (optionType === 'title' ? 'Agendar' : 'option1')) {
       this.appointmentState[to] = { step: 'name' };
       response = 'Por favor ingresa tu nombre';
     }
-    else if (option === (optionType === 'title' ? 'consultar' : 'option2')) {
+    else if (option === (optionType === 'title' ? 'Consultar' : 'option2')) {
+      this.assistantState[to] = { step: 'question' };
       response = 'Realizar Consulta';
     }
-    else if (optionType === 'title' ? option.match(/ubicaci[oó]n/) : option === 'option3') {
+    else if (optionType === 'title' ? option.match(/Ubicaci[oó]n/) : option === 'option3') {
       response = 'Esta es Nuestra Ubicación';
+    }
+    else if (optionType === (optionType === 'title' ? 'Emergencia' : 'option8')) {
+      await WhatsappService.sendMessage(to, 'Si es una emergencia, por favor llame a nuestra línea de atención');
+      return await this.sendConctact(to);
     }
 
     await WhatsappService.sendMessage(to, response);
@@ -258,14 +273,14 @@ class MessageHandler {
         {
           type: 'reply',
           reply: {
-            id: 'yes',
+            id: 'option4',
             title: 'Sí',
           },
         },
         {
           type: 'reply',
           reply: {
-            id: 'no',
+            id: 'option5',
             title: 'No',
           },
         },
@@ -273,6 +288,93 @@ class MessageHandler {
     } else {
       await WhatsappService.sendMessage(to, response);
     }
+  }
+
+  async handleAssistantFlow(to: string, messageText: string): Promise<void> {
+    const state = this.assistantState[to];
+    let response: string = 'No entiendo tu pregunta';
+    if (state!.step === 'question') {
+      const openAiResponse = await openAiService(messageText);
+      if (openAiResponse) {
+        response = openAiResponse;
+      }
+    }
+
+    delete this.assistantState[to];
+
+    await WhatsappService.sendMessage(to, response);
+    await WhatsappService.sendInteractiveButtons(to, '¿La respuesta fue de ayuda?', [
+      {
+        type: 'reply',
+        reply: {
+          id: 'option6',
+          title: 'Sí, gracias',
+        },
+      },
+      {
+        type: 'reply',
+        reply: {
+          id: 'option7',
+          title: 'No, otra pregunta',
+        },
+      },
+      {
+        type: 'reply',
+        reply: {
+          id: 'option8',
+          title: 'Emergencia',
+        },
+      }
+    ]);
+  }
+
+  async sendConctact(to: string): Promise<void> {
+    const contact = {
+      addresses: [
+        {
+          street: 'Av. Mariano Otero 1234',
+          city: 'Guadalajata',
+          state: 'Jalisco',
+          country: 'México',
+          country_code: 'MX',
+          type: 'WORK',
+        },
+      ],
+      birthday: '1990-01-01',
+      emails: [
+        {
+          email: 'contacto@medpet.com',
+          type: 'WORK',
+        },
+      ],
+      name: {
+        formatted_name: 'Medpet Contacto',
+        first_name: 'Medpet',
+        last_name: 'Contacto',
+        middle_name: '',
+        prefix: '',
+        suffix: '',
+      },
+      org: {
+        company: 'Medpet',
+        department: 'Atención a cliente',
+        title: 'Contacto'
+      },
+      phones: [
+        {
+          phone: '+525555555555',
+          wa_id: '525555555555',
+          type: 'WORK',
+        },
+      ],
+      urls: [
+        {
+          url: 'https://medpet.com',
+          type: 'WORK',
+        },
+      ],
+    }
+    await WhatsappService.sendContactMessage(to, contact);
   }
 }
 
